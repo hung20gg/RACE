@@ -260,3 +260,58 @@ You can pull them using `Git LFS` and quickly run `main.py` (see `run.sh` for pa
       url={https://arxiv.org/abs/2506.04832}, 
 }
 ```
+
+## GPT-OSS-20B adaptation
+
+`run.sh` defaults to `openai/gpt-oss-20b` and the bundled NQ dataset. The
+scorer and trained CoT extractor are unchanged. Install
+`requirements-gpt-oss.txt` instead of the original requirements, which pin
+Transformers before GPT-OSS support and would downgrade Torch. Scoring also
+requires `python -m spacy download en_core_web_trf`. MXFP4 inference requires
+compatible GPU hardware and kernels; no weights are loaded by the checks below.
+See [OpenAI's Transformers guide](https://developers.openai.com/cookbook/articles/gpt-oss/run-transformers).
+
+```bash
+conda activate verl
+cd /home/quanghung20gg/Documents/new/RACE
+# CPU-only; cached config/tokenizer, no weights, no generation.
+LOCAL_FILES_ONLY=1 DRY_RUN=1 bash run.sh
+CUDA_VISIBLE_DEVICES='' HF_HUB_OFFLINE=1 python -m unittest discover -s tests -v
+# Later, when a GPU is free: one example and one independent sampled answer.
+MAX_EXAMPLES=1 NUM_SAMPLES=1 MAX_NEW_TOKENS=4096 GPU_ID=0 bash run.sh
+```
+
+Override `MODEL_PATH`, `MODEL_NAME`, `DATASET_NAME`, `OUTPUT_DIR`, `GPU_ID`,
+`REASONING_EFFORT`, `CURRENT_DATE`, `MAX_NEW_TOKENS`, `NUM_SAMPLES`, or
+`MAX_EXAMPLES` through environment variables. HotpotQA still needs its separate
+upstream dataset download. The date defaults to **2026-10-12** and is explicitly
+rendered into the HF system prompt, replacing the template's `strftime_now`
+expression; passing a date kwarg alone would leave the wall-clock date in place.
+The exact rendered input is saved in each result, and CLI settings are saved in
+`generation_metadata.json`.
+
+GPT-OSS decoding preserves special tokens (`skip_special_tokens=False`) so
+`<|channel|>analysis<|message|>` and
+`<|end|><|start|>assistant<|channel|>final<|message|>` serve as the reasoning
+boundaries, matching `early-exit/scripts/config.yml`. A truncated analysis gets
+an empty final answer and stays aligned with its samples. The saved `output`
+keeps raw Harmony; `think` and `final_answer` contain the extracted text.
+
+This runner calls Transformers directly. If using an OpenAI-compatible
+completion API with an HF-rendered prompt, pass the exact request setting:
+
+```yaml
+extra_body:
+  skip_special_tokens: false
+```
+
+Generation stops at `<|fim_suffix|>`, allowing it to cross the `<|end|>`
+analysis boundary and produce the final answer.
+
+The equivalent local setting belongs to `tokenizer.decode`, rather than
+`apply_chat_template` or `model.generate`.
+
+CoT extraction now initializes the sample dataset and saves its summaries under
+`OUTPUT_DIR/DATASET_NAME/MODEL_NAME`, where scoring expects them. Scoring accepts
+a filename in the working directory. AUROC is skipped when no `judge.json`
+labels exist; new model generations require corresponding aligned labels.
