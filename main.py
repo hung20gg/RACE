@@ -33,7 +33,7 @@ def main():
     
     # Construct paths
     data_path = os.path.join(args.data_dir, args.dataset, args.model)
-    os.makedirs(os.path.dirname(args.output), exist_ok=True)
+    os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
     
     # Load data
     print(f"Loading data from {data_path}...")

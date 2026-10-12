@@ -65,7 +65,7 @@ def main():
     
     # Set up paths
     data_path = os.path.join(args.data_path, args.dataset_name, args.model_name)
-    output_path = args.output_dir
+    output_path = os.path.join(args.output_dir, args.dataset_name, args.model_name)
     if not os.path.exists(output_path):
         os.makedirs(output_path, exist_ok=True)
     
@@ -73,7 +73,7 @@ def main():
     dataset = json.load(open(os.path.join(data_path, "result.json"), "r"))
     
     # Load sample dataset
-    sample_dataset += json.load(open(os.path.join(data_path, "sample_result.json"), "r"))
+    sample_dataset = json.load(open(os.path.join(data_path, "sample_result.json"), "r"))
     
     assert len(sample_dataset) == len(dataset)
     

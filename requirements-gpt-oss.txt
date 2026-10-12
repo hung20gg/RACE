@@ -1,0 +1,12 @@
+# Alternative to upstream requirements.txt; keep the existing verl Torch stack.
+modelscope>=1.23.2
+nltk>=3.9.1
+numpy>=2.2.6
+scikit-learn>=1.6.1
+selfcheckgpt==0.1.7
+spacy>=3.8.4,<3.9
+torch>=2.8
+transformers>=4.55,<6
+accelerate>=1.10
+kernels>=0.10
+tqdm>=4.67.1
